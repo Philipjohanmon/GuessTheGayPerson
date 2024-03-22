@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Swingy Person</title>
+    <style>
+
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+.container {
+    margin-top: 50px;
+}
+
+#pictures {
+    margin-bottom: 20px;
+}
+
+button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 40%;
+    text-align: center;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+/* Styling for pictures container */
+#pictures {
+    margin-bottom: 20px;
+    display: flex; /* Use flexbox */
+    justify-content: center; /* Center items horizontally */
+    flex-wrap: wrap; /* Wrap items to next line if they exceed container width */
+}
+
+/* Styling for each person */
+#pictures div {
+    margin: 0 10px; /* Adjust spacing between items */
+    text-align: center; /* Center the content */
+}
+
+#pictures img {
+    width: 200px; /* Adjust image width */
+    height: auto;
+}
+
+#pictures p {
+    margin-top: 5px;
+    font-size: 14px;
+}
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Guess the Gay Person</h1>
+        <div id="pictures"></div>
+        <input type="number" id="guess" placeholder="Enter the corresponding number">
+        <button onclick="checkGuess()">Guess</button>
+        <p id="result"></p>
+        <p id="score">Score: 0</p>
+    </div>
+
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p>Game Over!</p>
+            <button onclick="tryAgain()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+let score = 0;
+const people = [];
+
+function fetchRandomPeople() {
+    fetch("https://randomuser.me/api/?results=5")
+        .then(response => response.json())
+        .then(data => {
+            const results = data.results;
+            results.forEach((person, index) => {
+                const img = document.createElement("img");
+                img.src = person.picture.large;
+                img.alt = `Person ${index + 1}`;
+                
+                const name = document.createElement("p"); // Create a paragraph element for the name
+                name.textContent = `${person.name.first} ${person.name.last}`; // Set the text content to the person's name
+                
+                const container = document.createElement("div"); // Create a container for the image and name
+                container.appendChild(img); // Append the image to the container
+                container.appendChild(name); // Append the name to the container
+                
+                document.getElementById("pictures").appendChild(container); // Append the container to the pictures div
+                
+                people[index] = {
+                    name: `${person.name.first} ${person.name.last}`,
+                    colorfulness: calculateColorfulness(),
+                    label: "not swingy"
+                };
+            });
+            startGame();
+        })
+        .catch(error => console.error("Error fetching random people:", error));
+}
+
+
+function calculateColorfulness() {
+    return Math.floor(Math.random() * 10) + 1;
+}
+
+function startGame() {
+    const swingyPerson = people.reduce((prev, current) => (prev.colorfulness > current.colorfulness) ? prev : current);
+    swingyPerson.label = "swingy";
+}
+
+// Get the modal
+const modal = document.getElementById("gameOverModal");
+
+// Get the <span> element that closes the modal
+const span = document.getElementsByClassName("close")[0];
+
+// When the user clicks the button, open the modal 
+function tryAgain() {
+    modal.style.display = "none";
+    document.getElementById("result").textContent = "";
+    document.getElementById("pictures").innerHTML = "";
+    fetchRandomPeople();
+    document.getElementById("guess").value = "";
+}
+
+// When the user clicks on <span> (x), close the modal
+span.onclick = function() {
+    modal.style.display = "none";
+}
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
+function checkGuess() {
+    const guess = parseInt(document.getElementById("guess").value);
+    if (guess >= 1 && guess <= 5) {
+        const guessedPerson = people[guess - 1];
+        const resultDiv = document.getElementById("result");
+        if (guessedPerson.label === "swingy") {
+            resultDiv.textContent = "Congratulations! You guessed the swingy person correctly!";
+            score++;
+            document.getElementById("score").textContent = `Score: ${score}`;
+            document.getElementById("pictures").innerHTML = "";
+            fetchRandomPeople();
+        } else {
+            const swingyPerson = people.find(person => person.label === "swingy");
+            resultDiv.textContent = `Sorry, the swingy person was ${swingyPerson.name}. Game over!`;
+            modal.style.display = "block";
+            score = 0; // Reset score
+            document.getElementById("score").textContent = `Score: ${score}`;
+        }
+    } else {
+        alert("Please enter a number between 1 and 5.");
+    }
+}
+
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+document.addEventListener("DOMContentLoaded", fetchRandomPeople);
+
+
+    </script>
+</body>
+</html>
